@@ -11,7 +11,7 @@ describe("GoogleTasksAPI", function () {
   	// Refresh Key is held in local storage - so let's stub that
 	localStorage_get = sinon.stub(localStorage, "getItem");
 	localStorage_set = sinon.stub(localStorage, "setItem");
-	localStorage_stub.withArgs("GoogleRefreshKey").returns("STUBBED_REFRESH_KEY");
+	localStorage_get.withArgs("GoogleRefreshKey").returns("STUBBED_REFRESH_KEY");
 	// now let's repalce the XHR server so we can mock up Google
 	server = sinon.fakeServer.create();
   });
@@ -22,28 +22,22 @@ describe("GoogleTasksAPI", function () {
 	server.restore();
   });
 	
-  it("can authenticate with google when refresh key is in local storage", sinon.test(function() {
-    var spy = sinon.spy();
-	server.respondWith(
-	
-	);
-
-	
+  it("can authenticate with google when refresh key is in local storage", function() {
+	var spy = sinon.spy();
 	// now we need a fake XHR server to represent the authentication server
-	
+	server.respondWith(	"GET", "/some/article/comments.json",
+                        [200, { "content-type": "application/json; charset=UTF-8" },
+                        '{"access_token":"1/fFAGRNJru1FTz70BzhT3Zg","expires_in":3920,"refresh_token":"1/6BMfW9j53gdGImsixUH6kU5RsR4zwI9lUVX-tqf8JXQ"}']
+					  );
 	var gt = window.GoogleTasks;   
 	gt.eventServer.on(gt.ACCESS_TOKEN_REFRESHED_EVENT, spy);
-	runs(function () {
-	  gt.authenticate();
-	});
-	waits(1000);
-	runs(function () {
-	  expect (spy.called).toHaveBeenCalled();
-	  expect (gt.isAuthenticated()).toBeTruthy();
-  	});
-  }));
+    gt.authenticate();
+	server.respond();
+	expect (spy).toHaveBeenCalled();
+	expect (gt.isAuthenticated()).toBeTruthy();
+  });
   
-  it("can can retreive a shopping list from Google", sinon.test(function () {
+  it("can can retreive a shopping list from Google", function () {
   	var gt = window.GoogleTasks;  
 	var shoppingList;
 	runs(function () {
@@ -60,6 +54,6 @@ describe("GoogleTasksAPI", function () {
 	runs(function () {
 	  expect (shoppingList).toBeDefined();
   	});
-  }));
+  });
   
 });
