@@ -46,6 +46,10 @@ window.GoogleTasks = function (){
 		console.log("TASK LIST\n------------------------\n\n"+JSON.stringify(data));
 		eventServer.emit(TASK_LIST_RETREIVED, data);
 	};
+	
+	var checkTaskList= function(jqXHR, textStatus){
+		console.log("TASK LIST FINISHED "+textStatus);
+	};
     
 	var authenticate = function(){
 		var storedRefreshToken = localStorage.getItem("GoogleRefreshKey");
@@ -102,12 +106,14 @@ window.GoogleTasks = function (){
 			oauth_token: access_token,
 			prettyprint: false
 		};
+		var url = "https://www.googleapis.com/tasks/v1/lists/"+shoppingListName+"/tasks";
 		$.ajax({
-	  		url: "https://www.googleapis.com/tasks/v1/lists/"+shoppingListName+"/tasks",
+	  		url: url,
 			type: "GET",
 	  		dataType: 'json',
 	  		data: data,
-	  		success: retreiveTaskListByAJAX
+	  		success: retreiveTaskListByAJAX,
+			complete: checkTaskList
 		});
 		return false;
 	}

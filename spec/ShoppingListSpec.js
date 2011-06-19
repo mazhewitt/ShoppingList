@@ -33,7 +33,7 @@ describe("ShoppingList", function() {
 	var s2 = new ShoppingItem("milk");
 	sl.addItem(s2);
 	sl.persistToLocalStorage();
-	var sl2 = new Shoppinglist();
+	var sl2 = new ShoppingList();
 	sl2.retreiveFromLocalStorage();	
 	expect(sl2).toEqual(sl);	
   });

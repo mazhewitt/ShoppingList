@@ -37,6 +37,25 @@ ShoppingList.prototype.removeItem = function(item){
 };
 
 ShoppingList.prototype.persistToLocalStorage = function(){
-
+	var shoppingListJSON = '{"items":[';
+	var myKeys = [], i=0;
+	for (myKeys[i++] in this.items);
+	for  (var x =0; x < i; x++){
+		shoppingListJSON += this.items[myKeys[x]].toJSON();
+		if (x != (i-1))
+		  shoppingListJSON += ",";
+	}
+	shoppingListJSON += "]}";
+	localStorage.setItem("shoppingList", shoppingListJSON);
 };
 
+ShoppingList.prototype.retreiveFromLocalStorage = function(){
+	var shoppingListJSON = localStorage.getItem("shoppingList");
+	console.log(shoppingListJSON);
+	var shoppingItems = jQuery.parseJSON( shoppingListJSON );
+	for (var i in shoppingItems.items) {
+	  var s = new ShoppingItem();
+	  s.fromJSON(shoppingItems.items[i])
+	  this.addItem(s);
+	}
+}

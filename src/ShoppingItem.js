@@ -25,6 +25,10 @@ function ShoppingItem(name, num){
 	};
 }
 
+ShoppingItem.prototype.fromJSON = function(data){
+	this.myTask = data;
+}
+
 ShoppingItem.prototype.isComplete = function(){
 	return this.myTask.status === "complete";
 }
@@ -34,7 +38,7 @@ ShoppingItem.prototype.setComplete = function(c){
 		this.myTask.status = "complete";
 	}
 	else{
-		this.myTask.status = "incomplete";
+		this.myTask.status = "needsAction";
 	}
 }
 ShoppingItem.prototype.getHowManyNeeded = function(){
