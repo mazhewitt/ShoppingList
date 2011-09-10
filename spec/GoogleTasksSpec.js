@@ -67,7 +67,18 @@ describe("GoogleTasksAPI", function () {
    	var thislist = tl;
    	  var tasklist = jQuery.parseJSON(thislist);
 	});
+	
+	it ("should raise an event when cannot authenticate ", function () {
+		
+		});
+	it ("should raise an event when cannot get the shopping list ", function(){
+	
+	});	
+	
 });
+
+
+
 
 var tl = '\
 {\
