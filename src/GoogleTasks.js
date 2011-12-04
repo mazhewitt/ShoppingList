@@ -23,24 +23,49 @@ window.GoogleTasks = function (){
 	var eventServer = new EventEmitter();
 	var ACCESS_TOKEN_REFRESHED_EVENT = "GoogleTasks.ACCESS_TOKEN_REFRESHED";
 	var TASK_LIST_RETREIVED = "GoogleTasks.TASK_LIST_RETREIVED";
+	var AUTH_ERROR_EVENT = "GoogleTasks.AUTH_ERROR_EVENT";
+	var GOOGLE_TASKS_ERROR_EVENT = "GoogleTasks.GOOGLE_TASKS_ERROR_EVENT";
 	var kind= "tasks#task";
 	
-	var setTokens_fromAJAX = function(data){
-		access_token = data.access_token;
-		refresh_token = data.refresh_token;
-		localStorage.setItem("GoogleRefreshKey", refresh_token);
-		console.log("got refresh token: " + refresh_token);
-		authenticated = true;
-		eventServer.emit(ACCESS_TOKEN_REFRESHED_EVENT);
+	var setTokens_fromAJAX = function(data, textStatus, jqXHR){
+		if (jqXHR.status == 200){
+			access_token = data.access_token;
+			refresh_token = data.refresh_token;
+			localStorage.setItem("GoogleRefreshKey", refresh_token);
+			console.log("got refresh token: " + refresh_token);
+			authenticated = true;
+			eventServer.emit(ACCESS_TOKEN_REFRESHED_EVENT);
+		}
+		else{
+			authError(data, textStatus, jqXHR);
+		}
 	};
 	
-	var refreshAccessTokenByAJAX = function(data){
-		access_token = data.access_token;
-		authenticated = true;
-		console.log("got aceess token: " + refresh_token);
-		eventServer.emit(ACCESS_TOKEN_REFRESHED_EVENT);
+	var refreshAccessTokenByAJAX = function(data, textStatus, jqXHR){
+		if (jqXHR.status == 200){
+			access_token = data.access_token;
+			authenticated = true;
+			console.log("got aceess token: " + refresh_token);
+			eventServer.emit(ACCESS_TOKEN_REFRESHED_EVENT);
+		}
+		else{
+			authError(data, textStatus, jqXHR);
+		}
 		
 	};
+	
+	var authError = function(jqXHR, textStatus, errorThrown){
+		authenticated = false;
+	    console.log("ERROR while authenticating: " + textStatus+ " "+ errorThrown);
+		eventServer.emit(AUTH_ERROR_EVENT);
+	};
+	
+	var tasksError = function(jqXHR, textStatus, errorThrown){
+		authenticated = false;
+	    console.log("ERROR while getting task list: " + textStatus+ " "+ errorThrown);
+		eventServer.emit(GOOGLE_TASKS_ERROR_EVENT);
+	};
+	
 	
 	var retreiveTaskListByAJAX = function(data){
 		console.log("TASK LIST\n------------------------\n\n"+JSON.stringify(data));
@@ -74,7 +99,8 @@ window.GoogleTasks = function (){
 				type: "POST",
 				dataType: 'json',
 				data: data,
-				success: setTokens_fromAJAX
+				success: setTokens_fromAJAX,
+				error: authError
 			});
 		}
 		return false;
@@ -92,7 +118,8 @@ window.GoogleTasks = function (){
 			type: "POST",
 	  		dataType: 'json',
 	  		data: data,
-	  		success: refreshAccessTokenByAJAX
+	  		success: refreshAccessTokenByAJAX,
+			error: authError
 		});
 		return false;
 	};
@@ -113,7 +140,8 @@ window.GoogleTasks = function (){
 	  		dataType: 'json',
 	  		data: data,
 	  		success: retreiveTaskListByAJAX,
-			complete: checkTaskList
+			complete: checkTaskList,
+			error:  tasksError
 		});
 		return false;
 	}
@@ -122,6 +150,8 @@ window.GoogleTasks = function (){
 	return{  // return public API
 		ACCESS_TOKEN_REFRESHED_EVENT: ACCESS_TOKEN_REFRESHED_EVENT,
 		TASK_LIST_RETREIVED: TASK_LIST_RETREIVED,
+		AUTH_ERROR_EVENT: AUTH_ERROR_EVENT,
+		GOOGLE_TASKS_ERROR_EVENT: GOOGLE_TASKS_ERROR_EVENT,
 		authenticate: authenticate,
 		refreshAccessToken: refreshAccessToken,
 		isAuthenticated: isAuthenticated,

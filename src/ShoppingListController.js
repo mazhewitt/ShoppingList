@@ -5,16 +5,23 @@
 
 window.ShoppingListContoller = function (){
 
+
+	var shoppingList = null;
 	
-	var getStoredShoppingList = function(data){
-		return null;
+	
+	var getShoppingList = function(){
+		if (shoppingList == null){
+			shoppingList = new ShoppingList();
+			shoppingList.retreiveFromLocalStorage();
+		}
+		return shoppingList;
 	};
 	
 
 
 	return{  // return public API
 		
-		getStoredShoppingList: getStoredShoppingList
+		getShoppingList: getShoppingList
 	};	
 	
 }();

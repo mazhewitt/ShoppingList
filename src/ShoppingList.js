@@ -52,10 +52,12 @@ ShoppingList.prototype.persistToLocalStorage = function(){
 ShoppingList.prototype.retreiveFromLocalStorage = function(){
 	var shoppingListJSON = localStorage.getItem("shoppingList");
 	console.log(shoppingListJSON);
-	var shoppingItems = jQuery.parseJSON( shoppingListJSON );
-	for (var i in shoppingItems.items) {
-	  var s = new ShoppingItem();
-	  s.fromJSON(shoppingItems.items[i])
-	  this.addItem(s);
+	if (shoppingListJSON != null) {
+		var shoppingItems = jQuery.parseJSON(shoppingListJSON);
+		for (var i in shoppingItems.items) {
+			var s = new ShoppingItem();
+			s.fromJSON(shoppingItems.items[i])
+			this.addItem(s);
+		}
 	}
 }

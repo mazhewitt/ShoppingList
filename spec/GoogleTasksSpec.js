@@ -3,9 +3,9 @@
  */
 describe("GoogleTasksAPI", function () {
 	
-	var server;
 	var localStorage_get;
 	var localStorage_set;
+	var fakeserver;
 	
   beforeEach(function () {
   	// Refresh Key is held in local storage - so let's stub that
@@ -13,74 +13,106 @@ describe("GoogleTasksAPI", function () {
 	localStorage_set = sinon.stub(localStorage, "setItem");
 	localStorage_get.withArgs("GoogleRefreshKey").returns("STUBBED_REFRESH_KEY");
 	// now let's repalce the XHR server so we can mock up Google
-	server = sinon.fakeServer.create();
+	fakeserver = sinon.fakeServer.create();
   });
   
   afterEach(function () {
     localStorage_get.restore();
 	localStorage_set.restore();
-	server.restore();
+	fakeserver.restore();
   });
+  
 	
   it("can authenticate with google when refresh key is in local storage", function() {
 	var spy = sinon.spy();
 	// now we need a fake XHR server to represent the authentication server
-	server.respondWith(	"POST", "https://accounts.google.com/o/oauth2/token",
-                        [200, { "content-type": "application/json; charset=UTF-8" },
-                        '{"access_token":"MY_STUB_ACCESS_TOKEN","expires_in":3920,"refresh_token":"MY_STUB_REFRESH_TOKEN"}']
-					  );
+	GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
 	var gt = window.GoogleTasks;   
 	gt.eventServer.on(gt.ACCESS_TOKEN_REFRESHED_EVENT, spy);
     gt.authenticate();
-	server.respond();
+	fakeserver.respond();
 	expect (spy).toHaveBeenCalled();
 	expect (gt.isAuthenticated()).toBeTruthy();
   });
   
   it("can can retreive a shopping list from Google", function () {
  	var spy = sinon.spy();
-	// now we need a fake XHR server to represent the authentication server
-	server.respondWith(	"POST", "https://accounts.google.com/o/oauth2/token",
-                        [200, { "content-type": "application/json; charset=UTF-8" },
-                        '{"access_token":"MY_STUB_ACCESS_TOKEN","expires_in":3920,"refresh_token":"MY_STUB_REFRESH_TOKEN"}']
-					  );
-					  
-   //and one for the tasks
-   server.respondWith(	"GET", "https://www.googleapis.com/tasks/v1/lists/@default/tasks?oauth_token=MY_STUB_ACCESS_TOKEN&prettyprint=false",
-                        [200, { "content-type": "application/json; charset=UTF-8" },
-                        tl]
-					  );				  
-					 
+	GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);	
+	GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver);				 
 	var gt = window.GoogleTasks;   
 	var shoppingList;
 	gt.authenticate();
-	server.respond();
+	fakeserver.respond();
 	expect (gt.isAuthenticated()).toBeTruthy();
     gt.eventServer.on(gt.TASK_LIST_RETREIVED, function(sl){shoppingList = sl;});
 	gt.retreiveTaskList();
-	server.respond();
+	fakeserver.respond();
 	expect (shoppingList).toBeDefined();
   });
   
   
    it("can parse the mock tasklist", function () {
-   	var thislist = tl;
+   	var thislist = GoogleTasksSpecHelper.tl;
    	  var tasklist = jQuery.parseJSON(thislist);
 	});
 	
-	it ("should raise an event when cannot authenticate ", function () {
+   it ("should raise an event when cannot authenticate ", function(){
+	   	var spy = sinon.spy();
+		GoogleTasksSpecHelper.setupFakeFailingAuthServer(fakeserver);
+		var gt = window.GoogleTasks;
+		gt.eventServer.on(gt.AUTH_ERROR_EVENT, spy);
+		gt.authenticate();
+		fakeserver.respond();
+		expect(spy).toHaveBeenCalled();
+		expect(gt.isAuthenticated()).toBeFalsy();
+	});
 		
-		});
-	it ("should raise an event when cannot get the shopping list ", function(){
-	
-	});	
+   it ("should raise an event when cannot get the shopping list ", function(){
+		var spy = sinon.spy();
+		GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+		GoogleTasksSpecHelper.setupFakeFailingTaskServer(fakeserver);
+		var gt = window.GoogleTasks;
+		gt.authenticate();
+		fakeserver.respond();
+		expect (gt.isAuthenticated()).toBeTruthy();
+		gt.eventServer.on(gt.GOOGLE_TASKS_ERROR_EVENT, spy);
+		gt.retreiveTaskList();
+		fakeserver.respond();
+		expect(spy).toHaveBeenCalled();
+	});
 	
 });
 
+var GoogleTasksSpecHelper = {
+	
 
-
-
-var tl = '\
+	setupFakeSuccessfulAuthServer: function(fakeserver){
+		fakeserver.respondWith(	"POST", "https://accounts.google.com/o/oauth2/token",
+                    [200, { "content-type": "application/json; charset=UTF-8" },
+                    '{"access_token":"MY_STUB_ACCESS_TOKEN","expires_in":3920,"refresh_token":"MY_STUB_REFRESH_TOKEN"}']
+				  );	
+	},
+	setupFakeSuccessfulTaskServer: function(fakeserver){
+       fakeserver.respondWith(	"GET", "https://www.googleapis.com/tasks/v1/lists/@default/tasks?oauth_token=MY_STUB_ACCESS_TOKEN&prettyprint=false",
+                    [200, { "content-type": "application/json; charset=UTF-8" },
+                    GoogleTasksSpecHelper.tl]
+				  );	
+	},
+	setupFakeFailingTaskServer: function(fakeserver){
+		fakeserver.respondWith(	"GET", "https://www.googleapis.com/tasks/v1/lists/@default/tasks?oauth_token=MY_STUB_ACCESS_TOKEN&prettyprint=false",
+                    [400, { "content-type": "application/json; charset=UTF-8" },
+                    ""]
+				  );	
+	},
+	setupFakeFailingAuthServer: function(fakeserver){
+		// now we need a fake XHR server to represent the authentication server
+		fakeserver.respondWith(	"POST", "https://accounts.google.com/o/oauth2/token",
+                    [400, { "content-type": "application/json; charset=UTF-8" },
+                    '']
+				  );
+		
+	},
+	tl: '\
 {\
  "kind": "tasks#tasks",\
  "etag": "\\"4I1JyCN_AcgBElJWYb7lv8jetTk/xnx8JAF-AwgNU5cDVK3VZb2dTuk\\"",\
@@ -128,4 +160,9 @@ var tl = '\
   }\
  ]\
 }\
-';
+'
+
+};
+
+
+

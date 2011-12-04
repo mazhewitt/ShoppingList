@@ -27,7 +27,7 @@ describe("ShoppingListController", function() {
 	
 	localStorage_get.withArgs("ShoppingList").returns(null);
 	var slc = window.ShoppingListContoller;
-	var sl = slc.getStoredShoppingList();
+	var sl = slc.getShoppingList();
 	expect(sl).toNotBe(null);
 	
   });
@@ -40,7 +40,7 @@ describe("ShoppingListController", function() {
 	expect (1).toEqual(0);
   });
   
-  it("can event you when the shopping list is updated", function() {
+  it("can event a listener (the view) when the shopping list is updated", function() {
 	expect (1).toEqual(0);
   });
   
