@@ -35,19 +35,19 @@ describe("GoogleTasksAPI", function () {
 	expect (gt.isAuthenticated()).toBeTruthy();
   });
   
-  it("can can retreive a shopping list from Google", function () {
+  it("can can retreive a task list from Google", function () {
  	var spy = sinon.spy();
 	GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);	
 	GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver);				 
 	var gt = window.GoogleTasks;   
-	var shoppingList;
+	var taskList;
 	gt.authenticate();
 	fakeserver.respond();
 	expect (gt.isAuthenticated()).toBeTruthy();
-    gt.eventServer.on(gt.TASK_LIST_RETREIVED, function(sl){shoppingList = sl;});
+    gt.eventServer.on(gt.TASK_LIST_RETREIVED, function(tl){taskList = tl;});
 	gt.retreiveTaskList();
 	fakeserver.respond();
-	expect (shoppingList).toBeDefined();
+	expect (taskList).toBeDefined();
   });
   
   

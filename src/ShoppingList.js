@@ -10,14 +10,21 @@ function ShoppingList(){
   		title: "ShoppingList"
   	}
 	this.items = {};
+	this.eventServer = new EventEmitter();
+	this.ITEM_ADDED_EVENT = "ShoppingList.ITEM_ADDED_EVENT";
+	this.ITEM_REMOVED_EVENT = "ShoppingList.ITEM_REMOVED_EVENT";
+	this.SHOPPING_LIST_UPDATED = "ShoppingList.SHOPPING_LIST_UPDATED";
 }
 
-ShoppingList.prototype.addItem = function(si) {
-	var osi = this.items[si.getItemName()];
-	console.log(JSON.stringify(si) + ">=" + JSON.stringify(osi));
-	if (osi == undefined || si.getUpdatedDateTime() >= osi.getUpdatedDateTime()) {
-		this.items[si.getItemName()] = si;
+ShoppingList.prototype.addItem = function(theNewShoppingItem) {
+	var oldShoppingItem = this.items[theNewShoppingItem.getItemName()];
+	console.log(JSON.stringify(theNewShoppingItem) + ">=" + JSON.stringify(oldShoppingItem));
+	if (oldShoppingItem == undefined || theNewShoppingItem.getUpdatedDateTime() >= oldShoppingItem.getUpdatedDateTime()) {
+		this.items[theNewShoppingItem.getItemName()] = theNewShoppingItem;
+		this.eventServer.emit(this.ITEM_ADDED_EVENT);
+		this.eventServer.emit(this.SHOPPING_LIST_UPDATED);
 	}
+	
 };
 
 ShoppingList.prototype.getItem = function(name) {
@@ -34,10 +41,12 @@ ShoppingList.prototype.getNumberOfItems = function() {
 
 ShoppingList.prototype.removeItem = function(item){
 	delete this.items[item.getItemName()];
+	this.eventServer.emit(this.ITEM_REMOVED_EVENT);
+	this.eventServer.emit(this.SHOPPING_LIST_UPDATED);
 };
 
-ShoppingList.prototype.persistToLocalStorage = function(){
-	var shoppingListJSON = '{"items":[';
+ShoppingList.prototype.toJSON = function(){
+	var shoppingListJSON = '{"kind": "tasks#tasks",\n"items":[';
 	var myKeys = [], i=0;
 	for (myKeys[i++] in this.items);
 	for  (var x =0; x < i; x++){
@@ -46,12 +55,21 @@ ShoppingList.prototype.persistToLocalStorage = function(){
 		  shoppingListJSON += ",";
 	}
 	shoppingListJSON += "]}";
-	localStorage.setItem("shoppingList", shoppingListJSON);
+	return shoppingListJSON;
 };
 
-ShoppingList.prototype.retreiveFromLocalStorage = function(){
-	var shoppingListJSON = localStorage.getItem("shoppingList");
-	console.log(shoppingListJSON);
+ShoppingList.prototype.keys = function(){
+	var myKeys = [], i=0;
+	for (myKeys[i++] in this.items);
+	return myKeys;
+};
+
+ShoppingList.prototype.itemKey = function(x){
+	return this.keys()[x];
+};
+
+ShoppingList.prototype.fromJSON = function(shoppingListJSON){
+	console.log("loading shoppingList from:\n "+shoppingListJSON);
 	if (shoppingListJSON != null) {
 		var shoppingItems = jQuery.parseJSON(shoppingListJSON);
 		for (var i in shoppingItems.items) {
@@ -59,5 +77,6 @@ ShoppingList.prototype.retreiveFromLocalStorage = function(){
 			s.fromJSON(shoppingItems.items[i])
 			this.addItem(s);
 		}
+	  this.eventServer.emit(this.SHOPPING_LIST_UPDATED);
 	}
 }

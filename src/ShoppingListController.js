@@ -17,11 +17,23 @@ window.ShoppingListContoller = function (){
 		return shoppingList;
 	};
 	
-
+    var persistListToLocalStorage = function(shoppingList){
+		var JSON = shoppingList.toJSON();
+		localStorage.setItem("ShoppingList", JSON);
+	};
+	
+	var retreiveListFromLocalStorage = function(){
+		var JSON = localStorage.getItem("ShoppingList");
+		var shoppingList = new ShoppingList();
+		shoppingList.fromJSON(JSON);
+		return shoppingList;
+	};
 
 	return{  // return public API
 		
-		getShoppingList: getShoppingList
+		getShoppingList: getShoppingList, 
+		persistListToLocalStorage: persistListToLocalStorage,
+		retreiveListFromLocalStorage: retreiveListFromLocalStorage
 	};	
 	
 }();
