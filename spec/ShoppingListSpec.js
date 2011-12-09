@@ -36,6 +36,17 @@ describe("ShoppingList", function() {
 	expect (sl.getNumberOfItems()).toEqual(2);
   });
   
+  it ("doesn't replace the old item, if the one added is even older", function(){
+  	var shoppingList = new ShoppingList();
+	var shoppingItem1 = new ShoppingItem("milk", 2);
+	shoppingList.addItem(shoppingItem1);
+	var shoppingItem2 = new ShoppingItem("milk", 9);
+	shoppingItem2.myTask.updated = "2011-06-04T20:20:48.485Z";
+	shoppingList.addItem(shoppingItem2);
+	expect (shoppingList.getNumberOfItems()).toEqual(1);
+	expect (shoppingList.getItem("milk").getHowManyNeeded()).toEqual(2);
+  });
+  
   it("when you remove an item, the number of items decreases", function() {
 	var sl = new ShoppingList();
 	var s = new ShoppingItem("shirts", 2);
@@ -48,7 +59,7 @@ describe("ShoppingList", function() {
 
   it ("can be restored from JSON", function(){
   	var shoppingList = new ShoppingList();
-	shoppingList.fromJSON(ShoppingListSpecHelper.sl);
+	shoppingList.fromJSON(ShoppingListSpecHelper.oldShoppingList);
 	expect(shoppingList.getNumberOfItems()).toEqual(3);
 	var shoppingItem = shoppingList.items[shoppingList.itemKey(0)];
 	expect (shoppingItem.getItemName()).toEqual("Milk");
@@ -67,16 +78,19 @@ describe("ShoppingList", function() {
 	expect(sl2).toEqual(sl);	
   });
   
-
-  
-  
-  it("can combine with another list, keeping the latest items", function() {
+  it("can combine with another list, keeping the latest changes", function() {
 	var mainShoppingList = new ShoppingList();
 	mainShoppingList.fromJSON(ShoppingListSpecHelper.oldShoppingList);
 	var newerShoppingList = new ShoppingList();
   	newerShoppingList.fromJSON(ShoppingListSpecHelper.newerShoppingList);
-	mainShoppingList.combine(newerShoppingList);
-	
+	mainShoppingList.combine(newerShoppingList, "2011-06-04T21:00:00.000Z");
+	var combinedShoppingList = new ShoppingList();
+	combinedShoppingList.fromJSON(ShoppingListSpecHelper.combinedShoppingList);
+	expect (combinedShoppingList.getNumberOfItems()).toEqual(mainShoppingList.getNumberOfItems());
+	$.each(combinedShoppingList.items, function(index, shoppingItem){
+		var mainShoppingListItem = mainShoppingList.getItem(index);
+		expect (mainShoppingListItem.toJSON()).toEqual(shoppingItem.toJSON());
+	});
   });
   
   

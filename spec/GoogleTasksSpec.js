@@ -38,7 +38,7 @@ describe("GoogleTasksAPI", function () {
   it("can can retreive a task list from Google", function () {
  	var spy = sinon.spy();
 	GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);	
-	GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver);				 
+	GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, tl);				 
 	var gt = window.GoogleTasks;   
 	var taskList;
 	gt.authenticate();
@@ -83,7 +83,7 @@ describe("GoogleTasksAPI", function () {
 	
 });
 
-var GoogleTasksSpecHelper = {
+var GoogleTasksSpecHelper ={
 	
 
 	setupFakeSuccessfulAuthServer: function(fakeserver){
@@ -92,10 +92,10 @@ var GoogleTasksSpecHelper = {
                     '{"access_token":"MY_STUB_ACCESS_TOKEN","expires_in":3920,"refresh_token":"MY_STUB_REFRESH_TOKEN"}']
 				  );	
 	},
-	setupFakeSuccessfulTaskServer: function(fakeserver){
+	setupFakeSuccessfulTaskServer: function(fakeserver, tasklist){
        fakeserver.respondWith(	"GET", "https://www.googleapis.com/tasks/v1/lists/@default/tasks?oauth_token=MY_STUB_ACCESS_TOKEN&prettyprint=false",
                     [200, { "content-type": "application/json; charset=UTF-8" },
-                    GoogleTasksSpecHelper.tl]
+                    tasklist]
 				  );	
 	},
 	setupFakeFailingTaskServer: function(fakeserver){
@@ -112,7 +112,11 @@ var GoogleTasksSpecHelper = {
 				  );
 		
 	},
-	tl: '\
+
+
+};
+
+var	tl= '\
 {\
  "kind": "tasks#tasks",\
  "etag": "\\"4I1JyCN_AcgBElJWYb7lv8jetTk/xnx8JAF-AwgNU5cDVK3VZb2dTuk\\"",\
@@ -160,9 +164,7 @@ var GoogleTasksSpecHelper = {
   }\
  ]\
 }\
-'
-
-};
+';
 
 
 

@@ -42,10 +42,9 @@ it("it can persist a ShoppingList to local storage, then retreive it again", fun
 	// now let's repalce the XHR server so we can mock up Google
 	fakeserver = sinon.fakeServer.create();
 	var spy = sinon.spy();
-	var gtsh = new GoogleTasksSpecHelper(); 
-	gtsh.tl = "";
-	gtsh.setupFakeSuccessfulAuthServer(fakeserver);	
-	gtsh.setupFakeSuccessfulTaskServer(fakeserver);				 
+	var tl = "";
+	GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);	
+	GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, tl);				 
 	
 	var shoppingListController = window.ShoppingListContoller;
 	shoppingListController.initialiseList();

@@ -18,13 +18,20 @@ function ShoppingList(){
 
 ShoppingList.prototype.addItem = function(theNewShoppingItem) {
 	var oldShoppingItem = this.items[theNewShoppingItem.getItemName()];
-	console.log(JSON.stringify(theNewShoppingItem) + ">=" + JSON.stringify(oldShoppingItem));
-	if (oldShoppingItem == undefined || theNewShoppingItem.getUpdatedDateTime() >= oldShoppingItem.getUpdatedDateTime()) {
-		this.items[theNewShoppingItem.getItemName()] = theNewShoppingItem;
-		this.eventServer.emit(this.ITEM_ADDED_EVENT);
-		this.eventServer.emit(this.SHOPPING_LIST_UPDATED);
+	if (oldShoppingItem != undefined){
+		
+		var insertingDate = theNewShoppingItem.getUpdatedDateTime();
+		var originalDate = oldShoppingItem.getUpdatedDateTime();
+		
+		if ( insertingDate < originalDate) {
+			console.log(JSON.stringify(theNewShoppingItem) + "<" + JSON.stringify(oldShoppingItem));
+			console.log(JSON.stringify(insertingDate) + "<" + JSON.stringify(originalDate));
+			return;
+		}
 	}
-	
+	this.items[theNewShoppingItem.getItemName()] = theNewShoppingItem;
+	this.eventServer.emit(this.ITEM_ADDED_EVENT);
+	this.eventServer.emit(this.SHOPPING_LIST_UPDATED);
 };
 
 ShoppingList.prototype.getItem = function(name) {
@@ -79,4 +86,20 @@ ShoppingList.prototype.fromJSON = function(shoppingListJSON){
 		}
 	  this.eventServer.emit(this.SHOPPING_LIST_UPDATED);
 	}
-}
+};
+ShoppingList.prototype.combine = function(otherList, dateLastResync){ 
+    var me = this;
+	if ((otherList != null) || (otherList = undefined)) {
+	  $.each(otherList.items, function(index, shoppingItem){
+	  	me.addItem(shoppingItem);
+		});
+	  $.each(this.items, function(index, shoppingItem){
+	  	  var otherItem = otherList.getItem(shoppingItem.getItemName());
+		  if ((otherItem == null) || (otherItem == undefined)){
+		  	if (shoppingItem.getUpdatedDateTime() < new Date(dateLastResync)){
+				me.removeItem(shoppingItem);
+			}
+		  }
+		});
+	}
+};
