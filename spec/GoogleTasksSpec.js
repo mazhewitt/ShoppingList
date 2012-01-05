@@ -36,7 +36,6 @@ describe("GoogleTasksAPI", function () {
   });
   
   it("can can retreive a task list from Google", function () {
- 	var spy = sinon.spy();
 	GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);	
 	GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, tl);				 
 	var gt = window.GoogleTasks;   
@@ -54,6 +53,7 @@ describe("GoogleTasksAPI", function () {
    it("can parse the mock tasklist", function () {
    	var thislist = GoogleTasksSpecHelper.tl;
    	  var tasklist = jQuery.parseJSON(thislist);
+      expect (tasklist).toBeDefined();
 	});
 	
    it ("should raise an event when cannot authenticate ", function(){
