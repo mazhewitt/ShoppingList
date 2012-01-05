@@ -85,7 +85,9 @@ describe("GoogleTasksAPI", function () {
 		expect (1).toEqual(2);
 	});
 	
-	
+	it ("can delete a task item", function(){
+      expect (1).toEqual(2);
+	});
 	
 });
 
