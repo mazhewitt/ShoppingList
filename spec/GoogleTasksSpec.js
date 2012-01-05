@@ -81,6 +81,12 @@ describe("GoogleTasksAPI", function () {
 		expect(spy).toHaveBeenCalled();
 	});
 	
+	it ("can update a single item in the google task list", function(){
+		expect (1).toEqual(2);
+	});
+	
+	
+	
 });
 
 var GoogleTasksSpecHelper ={
@@ -111,7 +117,7 @@ var GoogleTasksSpecHelper ={
                     '']
 				  );
 		
-	},
+	}
 
 
 };
