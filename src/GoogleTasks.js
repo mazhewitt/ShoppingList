@@ -178,6 +178,7 @@ window.GoogleTasks = function (){
 		TASK_LIST_RETREIVED: TASK_LIST_RETREIVED,
 		AUTH_ERROR_EVENT: AUTH_ERROR_EVENT,
 		GOOGLE_TASKS_ERROR_EVENT: GOOGLE_TASKS_ERROR_EVENT,
+        TASK_INSERTED: TASK_INSERTED,
 		authenticate: authenticate,
 		refreshAccessToken: refreshAccessToken,
 		isAuthenticated: isAuthenticated,
