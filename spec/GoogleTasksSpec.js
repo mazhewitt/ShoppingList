@@ -46,6 +46,11 @@
         {
             "content-type": "application/json; charset=UTF-8"
         },      '']);
+        
+        fakeserver.respondWith("PUT", "https://www.googleapis.com/tasks/v1/lists/@default/tasks/"+taskObj.id, [200,
+        {
+            "content-type": "application/json; charset=UTF-8"
+        },      '']);
     }
 };
  
@@ -132,11 +137,67 @@ describe("GoogleTasksAPI", function() {
     });
 
     it("can update a single item in the google task list", function() {
-        expect(1).toEqual(2);
+        GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+        GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
+        var gt = window.GoogleTasks;
+        gt.authenticate();
+        fakeserver.respond();
+        expect(gt.isAuthenticated()).toBeTruthy();
+        
+        var newTask = {
+            title: "Pork Chops",
+            notes: "Get 20"
+        };
+        var responseTask;
+        gt.eventServer.on(gt.TASK_INSERTED, function(data){
+            responseTask = data;
+        });
+        gt.insertTask(newTask);
+        fakeserver.respond();
+        expect(responseTask.title).toEqual(newTask.title);
+        expect(responseTask.updated).toBeDefined
+        
+        GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, updateTask);
+        var taskToUpdate = responseTask;
+        taskToUpdate.notes = "get 40";
+        gt.eventServer.on(gt.TASK_UPDATED, function(data){
+            responseTask = data;
+        });
+        gt.updateTask(taskToUpdate);
+  
+        fakeserver.respond();
+        expect(responseTask.title).toEqual(taskToUpdate.title);
+        expect(responseTask.notes).toEqual("get 40");
     });
 
     it("can delete a task item", function() {
-        expect(1).toEqual(2);
+        GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+        GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
+        var gt = window.GoogleTasks;
+        gt.authenticate();
+        fakeserver.respond();
+        expect(gt.isAuthenticated()).toBeTruthy();
+        
+        var newTask = {
+            title: "Pork Chops",
+            notes: "Get 20"
+        };
+        var responseTask;
+        gt.eventServer.on(gt.TASK_INSERTED, function(data){
+            responseTask = data;
+        });
+        gt.insertTask(newTask);
+        fakeserver.respond();
+        expect(responseTask.title).toEqual(newTask.title);
+        expect(responseTask.updated).toBeDefined
+        
+        
+        var spy = sinon.spy();
+        gt.eventServer.on(gt.TASK_DELETED, spy); 
+        gt.deleteTask(responseTask);
+        fakeserver.respond();
+        expect(spy).toHaveBeenCalled();
+        
     });
 
     it("can add a task item", function() {
@@ -173,6 +234,19 @@ var testTask = '\
  "selfLink": "https://www.googleapis.com/tasks/v1/lists/MDQ0MjgwNjg1MDI3MjgyMzA1NDk6MDow/tasks/MDQ0MjgwNjg1MDI3MjgyMzA1NDk6MDoxMzAyOTUwNTc1",\
  "position": "00000000000025873296",\
  "notes": "Get 20",\
+ "status": "needsAction"\
+}';
+
+var updateTask = '\
+{\
+ "kind": "tasks#task",\
+ "id": "MDQ0MjgwNjg1MDI3MjgyMzA1NDk6MDoxMzAyOTUwNTc1",\
+ "etag": "\\"Eb0IVTIf8nvTXDAzt6s5r2fCyaI/LTk2NTg0MjkyOA\\"",\
+ "title": "Pork Chops",\
+ "updated": "2012-01-06T13:29:57.000Z",\
+ "selfLink": "https://www.googleapis.com/tasks/v1/lists/MDQ0MjgwNjg1MDI3MjgyMzA1NDk6MDow/tasks/MDQ0MjgwNjg1MDI3MjgyMzA1NDk6MDoxMzAyOTUwNTc1",\
+ "position": "00000000000025873296",\
+ "notes": "Get 40",\
  "status": "needsAction"\
 }';
 
