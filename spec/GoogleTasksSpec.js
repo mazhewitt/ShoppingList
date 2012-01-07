@@ -47,10 +47,16 @@
             "content-type": "application/json; charset=UTF-8"
         },      '']);
         
+        
+    },
+    
+    setupFakeSuccessfulUpdateTaskServer: function(fakeserver, task) {
+        var taskObj = jQuery.parseJSON(task);
         fakeserver.respondWith("PUT", "https://www.googleapis.com/tasks/v1/lists/@default/tasks/"+taskObj.id, [200,
         {
             "content-type": "application/json; charset=UTF-8"
-        },      '']);
+        },      task]);
+        
     }
 };
  
@@ -157,7 +163,7 @@ describe("GoogleTasksAPI", function() {
         expect(responseTask.title).toEqual(newTask.title);
         expect(responseTask.updated).toBeDefined
         
-        GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, updateTask);
+        GoogleTasksSpecHelper.setupFakeSuccessfulUpdateTaskServer(fakeserver, updateTask);
         var taskToUpdate = responseTask;
         taskToUpdate.notes = "get 40";
         gt.eventServer.on(gt.TASK_UPDATED, function(data){
@@ -246,7 +252,7 @@ var updateTask = '\
  "updated": "2012-01-06T13:29:57.000Z",\
  "selfLink": "https://www.googleapis.com/tasks/v1/lists/MDQ0MjgwNjg1MDI3MjgyMzA1NDk6MDow/tasks/MDQ0MjgwNjg1MDI3MjgyMzA1NDk6MDoxMzAyOTUwNTc1",\
  "position": "00000000000025873296",\
- "notes": "Get 40",\
+ "notes": "get 40",\
  "status": "needsAction"\
 }';
 

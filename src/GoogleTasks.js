@@ -27,6 +27,7 @@ window.GoogleTasks = function (){
 	var GOOGLE_TASKS_ERROR_EVENT = "GoogleTasks.GOOGLE_TASKS_ERROR_EVENT";
     var TASK_INSERTED  = "GoogleTasks.TASK_INSERTED";
     var TASK_UPDATED  = "GoogleTasks.TASK_UPDATED";
+    var TASK_DELETED  = "GoogleTasks.TASK_DELETED";
 	var kind= "tasks#task";
 	
 	var setTokens_fromAJAX = function(data, textStatus, jqXHR){
@@ -166,6 +167,16 @@ window.GoogleTasks = function (){
 		}
     };
     
+    var taskDeleted = function(data, textStatus, jqXHR){
+        if (jqXHR.status == 200){
+        	eventServer.emit(TASK_DELETED);
+		}
+		else{
+			tasksError(data, textStatus, jqXHR);
+		}
+    };
+    
+    
     var insertTask = function(task){
 		var url = "https://www.googleapis.com/tasks/v1/lists/"+shoppingListName+"/tasks";
 		$.ajax({
@@ -197,6 +208,22 @@ window.GoogleTasks = function (){
 		});
 		return false;
     };
+    
+    var deleteTask = function(task){
+        var url = "https://www.googleapis.com/tasks/v1/lists/"+shoppingListName+"/tasks/"+task.id;
+		$.ajax({
+	  		url: url,
+			type: "DELETE",
+	  		dataType: 'json',
+            headers: {
+                Authorization: access_token
+            },
+	  		data: task,
+	  		success: taskDeleted,
+			error:  tasksError
+		});
+		return false;
+    };
 
 	return{  // return public API
 		ACCESS_TOKEN_REFRESHED_EVENT: ACCESS_TOKEN_REFRESHED_EVENT,
@@ -205,13 +232,15 @@ window.GoogleTasks = function (){
 		GOOGLE_TASKS_ERROR_EVENT: GOOGLE_TASKS_ERROR_EVENT,
         TASK_INSERTED: TASK_INSERTED,
         TASK_UPDATED: TASK_UPDATED,
+        TASK_DELETED: TASK_DELETED,
 		authenticate: authenticate,
 		refreshAccessToken: refreshAccessToken,
 		isAuthenticated: isAuthenticated,
 		eventServer: eventServer,
 		retreiveTaskList: retreiveTaskList,
         insertTask: insertTask,
-        updateTask: updateTask
+        updateTask: updateTask,
+        deleteTask: deleteTask
 	};	
 	
 }();
