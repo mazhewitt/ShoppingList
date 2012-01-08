@@ -67,31 +67,44 @@ describe("GoogleTasksAPI", function() {
     var fakeserver;
 
     beforeEach(function() {
-        // Refresh Key is held in local storage - so let's stub that
-        localStorage_get = sinon.stub(localStorage, "getItem");
-        localStorage_set = sinon.stub(localStorage, "setItem");
-        localStorage_get.withArgs("GoogleRefreshKey").returns("STUBBED_REFRESH_KEY");
-        // now let's repalce the XHR server so we can mock up Google
-        fakeserver = sinon.fakeServer.create();
+        if (mockTest){
+            // Refresh Key is held in local storage - so let's stub that
+            localStorage_get = sinon.stub(localStorage, "getItem");
+            localStorage_set = sinon.stub(localStorage, "setItem");
+            localStorage_get.withArgs("GoogleRefreshKey").returns("STUBBED_REFRESH_KEY");
+            // now let's repalce the XHR server so we can mock up Google
+            fakeserver = sinon.fakeServer.create();
+        }
     });
 
     afterEach(function() {
-        localStorage_get.restore();
-        localStorage_set.restore();
-        fakeserver.restore();
+        if (mockTest){
+            localStorage_get.restore();
+            localStorage_set.restore();
+            fakeserver.restore();
+        }
     });
 
 
     it("can authenticate with google when refresh key is in local storage", function() {
         var spy = sinon.spy();
-        // now we need a fake XHR server to represent the authentication server
-        GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+        if (mockTest){
+          // now we need a fake XHR server to represent the authentication server
+          GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+        }
         var gt = window.GoogleTasks;
         gt.eventServer.on(gt.ACCESS_TOKEN_REFRESHED_EVENT, spy);
         gt.authenticate();
-        fakeserver.respond();
-        expect(spy).toHaveBeenCalled();
-        expect(gt.isAuthenticated()).toBeTruthy();
+        if (mockTest){
+            fakeserver.respond();
+        }
+        waitsFor(function() {
+            return gt.isAuthenticated();
+        }, "Authentication timed out", 10000);
+        runs(function (){
+            expect(spy).toHaveBeenCalled();
+            expect(gt.isAuthenticated()).toBeTruthy();
+        });
     });
 
     it("can can retreive a task list from Google", function() {
