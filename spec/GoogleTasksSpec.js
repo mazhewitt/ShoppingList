@@ -5,174 +5,233 @@
 
 
  var GoogleTasksSpecHelper = {
-
-
-    setupFakeSuccessfulAuthServer: function(fakeserver) {
-        fakeserver.respondWith("POST", "https://accounts.google.com/o/oauth2/token", [200,
-        {
-            "content-type": "application/json; charset=UTF-8"
-        }, '{"access_token":"MY_STUB_ACCESS_TOKEN","expires_in":3920,"refresh_token":"MY_STUB_REFRESH_TOKEN"}']);
-    },
-    setupFakeSuccessfulTaskListServer: function(fakeserver, tasklist) {
-        fakeserver.respondWith("GET", "https://www.googleapis.com/tasks/v1/lists/@default/tasks?oauth_token=MY_STUB_ACCESS_TOKEN&prettyprint=false", [200,
-        {
-            "content-type": "application/json; charset=UTF-8"
-        },
-        tasklist]);
-    },
-    setupFakeFailingTaskListServer: function(fakeserver) {
-        fakeserver.respondWith("GET", "https://www.googleapis.com/tasks/v1/lists/@default/tasks?oauth_token=MY_STUB_ACCESS_TOKEN&prettyprint=false", [400,
-        {
-            "content-type": "application/json; charset=UTF-8"
-        }, ""]);
-    },
-    setupFakeFailingAuthServer: function(fakeserver) {
-        // now we need a fake XHR server to represent the authentication server
-        fakeserver.respondWith("POST", "https://accounts.google.com/o/oauth2/token", [400,
-        {
-            "content-type": "application/json; charset=UTF-8"
-        }, '']);
-
-    },
-    setupFakeSuccessfulTaskServer: function(fakeserver, task) {
-        fakeserver.respondWith("POST", "https://www.googleapis.com/tasks/v1/lists/@default/tasks", [200,
-        {
-            "content-type": "application/json; charset=UTF-8"
-        },      task]);
-        
-        var taskObj = jQuery.parseJSON(task);
-        
-        fakeserver.respondWith("DELETE", "https://www.googleapis.com/tasks/v1/lists/@default/tasks/"+taskObj.id, [200,
-        {
-            "content-type": "application/json; charset=UTF-8"
-        },      '']);
-        
-        
-    },
-    
-    setupFakeSuccessfulUpdateTaskServer: function(fakeserver, task) {
-        var taskObj = jQuery.parseJSON(task);
-        fakeserver.respondWith("PUT", "https://www.googleapis.com/tasks/v1/lists/@default/tasks/"+taskObj.id, [200,
-        {
-            "content-type": "application/json; charset=UTF-8"
-        },      task]);
-        
-    }
-};
  
-describe("GoogleTasksAPI", function() {
-
-    var localStorage_get;
-    var localStorage_set;
-    var fakeserver;
-
-    beforeEach(function() {
-        if (mockTest){
-            // Refresh Key is held in local storage - so let's stub that
-            localStorage_get = sinon.stub(localStorage, "getItem");
-            localStorage_set = sinon.stub(localStorage, "setItem");
-            localStorage_get.withArgs("GoogleRefreshKey").returns("STUBBED_REFRESH_KEY");
-            // now let's repalce the XHR server so we can mock up Google
-            fakeserver = sinon.fakeServer.create();
-        }
-    });
-
-    afterEach(function() {
-        if (mockTest){
-            localStorage_get.restore();
-            localStorage_set.restore();
-            fakeserver.restore();
-        }
-    });
-
-
-    it("can authenticate with google when refresh key is in local storage", function() {
-        var spy = sinon.spy();
-        if (mockTest){
-          // now we need a fake XHR server to represent the authentication server
-          GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
-        }
-        var gt = window.GoogleTasks;
-        gt.eventServer.on(gt.ACCESS_TOKEN_REFRESHED_EVENT, spy);
-        gt.authenticate();
-        if (mockTest){
-            fakeserver.respond();
-        }
-        waitsFor(function() {
-            return gt.isAuthenticated();
-        }, "Authentication timed out", 10000);
-        runs(function (){
-            expect(spy).toHaveBeenCalled();
-            expect(gt.isAuthenticated()).toBeTruthy();
-        });
-    });
-
-    it("can can retreive a task list from Google", function() {
-        var taskListRetreived = false;
-        if (mockTest) {
-            GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
-            GoogleTasksSpecHelper.setupFakeSuccessfulTaskListServer(fakeserver, tl);
-        }
-        var gt = window.GoogleTasks;
-        var taskList;
-        gt.authenticate();
-        if (mockTest) {
-            fakeserver.respond();
-        }
-        waitsFor(function() {
-            return gt.isAuthenticated();
-        }, "Authentication timed out", 10000);
-    
-        runs(function() {
-            gt.eventServer.on(gt.TASK_LIST_RETREIVED, function(tl) {
-                taskList = tl;
-                taskListRetreived = true;
-            });
-            gt.retreiveTaskList();
-            if (mockTest) {
-                fakeserver.respond();
-            }
-        });
-        waitsFor(function() {
-            return taskListRetreived;
-        }, "Authentication timed out", 10000);
-        runs(function() {
-            expect(taskList).toBeDefined();
-        });
-    });
-
-
-    it("can parse the mock tasklist", function() {
-        var thislist = tl;
-        var tasklist = jQuery.parseJSON(thislist);
-        expect(tasklist).toBeDefined();
-    });
-
-    it("should raise an event when cannot authenticate ", function() {
-        var spy = sinon.spy();
-        GoogleTasksSpecHelper.setupFakeFailingAuthServer(fakeserver);
-        var gt = window.GoogleTasks;
-        gt.eventServer.on(gt.AUTH_ERROR_EVENT, spy);
-        gt.authenticate(); 
-        fakeserver.respond();
-        expect(spy).toHaveBeenCalled();
-        expect(gt.isAuthenticated()).toBeFalsy();
-    });
-
-    it("should raise an event when cannot get the shopping list ", function() {
-        var spy = sinon.spy();
-        GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
-        GoogleTasksSpecHelper.setupFakeFailingTaskListServer(fakeserver);
-        var gt = window.GoogleTasks;
-        gt.authenticate();
-        fakeserver.respond();
-        expect(gt.isAuthenticated()).toBeTruthy();
-        gt.eventServer.on(gt.GOOGLE_TASKS_ERROR_EVENT, spy);
-        gt.retreiveTaskList();
-        fakeserver.respond();
-        expect(spy).toHaveBeenCalled();
-    });
-
+ 
+     setupFakeSuccessfulAuthServer: function(fakeserver) {
+         fakeserver.respondWith("POST", "https://accounts.google.com/o/oauth2/token", [200,
+         {
+             "content-type": "application/json; charset=UTF-8"
+         }, '{"access_token":"MY_STUB_ACCESS_TOKEN","expires_in":3920,"refresh_token":"MY_STUB_REFRESH_TOKEN"}']);
+     },
+     setupFakeSuccessfulTaskListServer: function(fakeserver, tasklist) {
+         fakeserver.respondWith("GET", "https://www.googleapis.com/tasks/v1/lists/@default/tasks?oauth_token=MY_STUB_ACCESS_TOKEN&prettyprint=false", [200,
+         {
+             "content-type": "application/json; charset=UTF-8"
+         },
+         tasklist]);
+     },
+     setupFakeFailingTaskListServer: function(fakeserver) {
+         fakeserver.respondWith("GET", "https://www.googleapis.com/tasks/v1/lists/@default/tasks?oauth_token=MY_STUB_ACCESS_TOKEN&prettyprint=false", [400,
+         {
+             "content-type": "application/json; charset=UTF-8"
+         }, ""]);
+     },
+     setupFakeFailingAuthServer: function(fakeserver) {
+         // now we need a fake XHR server to represent the authentication server
+         fakeserver.respondWith("POST", "https://accounts.google.com/o/oauth2/token", [400,
+         {
+             "content-type": "application/json; charset=UTF-8"
+         }, '']);
+ 
+     },
+     setupFakeSuccessfulTaskServer: function(fakeserver, task) {
+         fakeserver.respondWith("POST", "https://www.googleapis.com/tasks/v1/lists/@default/tasks", [200,
+         {
+             "content-type": "application/json; charset=UTF-8"
+         },
+         task]);
+ 
+         var taskObj = jQuery.parseJSON(task);
+ 
+         fakeserver.respondWith("DELETE", "https://www.googleapis.com/tasks/v1/lists/@default/tasks/" + taskObj.id, [200,
+         {
+             "content-type": "application/json; charset=UTF-8"
+         }, '']);
+ 
+ 
+     },
+ 
+     setupFakeSuccessfulUpdateTaskServer: function(fakeserver, task) {
+         var taskObj = jQuery.parseJSON(task);
+         fakeserver.respondWith("PUT", "https://www.googleapis.com/tasks/v1/lists/@default/tasks/" + taskObj.id, [200,
+         {
+             "content-type": "application/json; charset=UTF-8"
+         },
+         task]);
+ 
+     }
+ };
+ 
+ describe("GoogleTasksAPI Mock Tests", function() {
+ 
+     var localStorage_get;
+     var localStorage_set;
+     var fakeserver;
+ 
+     beforeEach(function() {
+         // Refresh Key is held in local storage - so let's stub that
+         localStorage_get = sinon.stub(localStorage, "getItem");
+         localStorage_set = sinon.stub(localStorage, "setItem");
+         localStorage_get.withArgs("GoogleRefreshKey").returns("STUBBED_REFRESH_KEY");
+         // now let's repalce the XHR server so we can mock up Google
+         fakeserver = sinon.fakeServer.create();
+     });
+ 
+     afterEach(function() {
+         localStorage_get.restore();
+         localStorage_set.restore();
+         fakeserver.restore();
+     });
+ 
+ 
+     it("can authenticate with google when refresh key is in local storage", function() {
+         var spy = sinon.spy();
+         // now we need a fake XHR server to represent the authentication server
+         GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+         var gt = window.GoogleTasks;
+         gt.eventServer.on(gt.ACCESS_TOKEN_REFRESHED_EVENT, spy);
+         gt.authenticate();
+         fakeserver.respond();
+         expect(spy).toHaveBeenCalled();
+         expect(gt.isAuthenticated()).toBeTruthy();
+     });
+ 
+     it("can can retreive a task list from Google", function() {
+         GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+         GoogleTasksSpecHelper.setupFakeSuccessfulTaskListServer(fakeserver, tl);
+         var gt = window.GoogleTasks;
+         var taskList;
+         gt.authenticate();
+         fakeserver.respond();
+         expect(gt.isAuthenticated()).toBeTruthy();
+         gt.eventServer.on(gt.TASK_LIST_RETREIVED, function(tl) {
+             taskList = tl;
+         });
+         gt.retreiveTaskList();
+         fakeserver.respond();
+         expect(taskList).toBeDefined();
+     });
+ 
+ 
+     it("can parse the mock tasklist", function() {
+         var thislist = tl;
+         var tasklist = jQuery.parseJSON(thislist);
+         expect(tasklist).toBeDefined();
+     });
+ 
+     it("should raise an event when cannot authenticate ", function() {
+         var spy = sinon.spy();
+         GoogleTasksSpecHelper.setupFakeFailingAuthServer(fakeserver);
+         var gt = window.GoogleTasks;
+         gt.eventServer.on(gt.AUTH_ERROR_EVENT, spy);
+         gt.authenticate();
+         fakeserver.respond();
+         expect(spy).toHaveBeenCalled();
+         expect(gt.isAuthenticated()).toBeFalsy();
+     });
+ 
+     it("should raise an event when cannot get the shopping list ", function() {
+         var spy = sinon.spy();
+         GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+         GoogleTasksSpecHelper.setupFakeFailingTaskListServer(fakeserver);
+         var gt = window.GoogleTasks;
+         gt.authenticate();
+         fakeserver.respond();
+         expect(gt.isAuthenticated()).toBeTruthy();
+         gt.eventServer.on(gt.GOOGLE_TASKS_ERROR_EVENT, spy);
+         gt.retreiveTaskList();
+         fakeserver.respond();
+         expect(spy).toHaveBeenCalled();
+     });
+ 
+     it("can update a single item in the google task list", function() {
+         GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+         GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
+         var gt = window.GoogleTasks;
+         gt.authenticate();
+         fakeserver.respond();
+         expect(gt.isAuthenticated()).toBeTruthy();
+ 
+         var newTask = {
+             title: "Pork Chops",
+             notes: "Get 20"
+         };
+         var responseTask;
+         gt.eventServer.on(gt.TASK_INSERTED, function(data) {
+             responseTask = data;
+         });
+         gt.insertTask(newTask);
+         fakeserver.respond();
+         expect(responseTask.title).toEqual(newTask.title);
+         expect(responseTask.updated).toBeDefined
+ 
+         GoogleTasksSpecHelper.setupFakeSuccessfulUpdateTaskServer(fakeserver, updateTask);
+         var taskToUpdate = responseTask;
+         taskToUpdate.notes = "get 40";
+         gt.eventServer.on(gt.TASK_UPDATED, function(data) {
+             responseTask = data;
+         });
+         gt.updateTask(taskToUpdate);
+ 
+         fakeserver.respond();
+         expect(responseTask.title).toEqual(taskToUpdate.title);
+         expect(responseTask.notes).toEqual("get 40");
+     });
+ 
+     it("can delete a task item", function() {
+         GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+         GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
+         var gt = window.GoogleTasks;
+         gt.authenticate();
+         fakeserver.respond();
+         expect(gt.isAuthenticated()).toBeTruthy();
+ 
+         var newTask = {
+             title: "Pork Chops",
+             notes: "Get 20"
+         };
+         var responseTask;
+         gt.eventServer.on(gt.TASK_INSERTED, function(data) {
+             responseTask = data;
+         });
+         gt.insertTask(newTask);
+         fakeserver.respond();
+         expect(responseTask.title).toEqual(newTask.title);
+         expect(responseTask.updated).toBeDefined
+ 
+ 
+         var spy = sinon.spy();
+         gt.eventServer.on(gt.TASK_DELETED, spy);
+         gt.deleteTask(responseTask);
+         fakeserver.respond();
+         expect(spy).toHaveBeenCalled();
+ 
+     });
+ 
+     it("can add a task item", function() {
+         GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+         GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
+         var gt = window.GoogleTasks;
+         gt.authenticate();
+         fakeserver.respond();
+         expect(gt.isAuthenticated()).toBeTruthy();
+         var newTask = {
+             title: "Pork Chops",
+             notes: "Get 20"
+         };
+         var responseTask;
+         gt.eventServer.on(gt.TASK_INSERTED, function(data) {
+             responseTask = data;
+         });
+         gt.insertTask(newTask);
+         fakeserver.respond();
+         expect(responseTask.title).toEqual(newTask.title);
+         expect(responseTask.updated).toBeDefined();
+     });
+ 
+ });
+ 
+describe("GoogleTasksAPI Integration Tests", function() {
     it("can update a single item in the google task list", function() {
         var taskRetreived = false;
         var taskUpdated = false;
@@ -182,17 +241,11 @@ describe("GoogleTasksAPI", function() {
         };
         var responseTask;
         var taskToUpdate;
-        
-        if (mockTest) {
-            GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
-            GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
-        }
+
+
         var gt = window.GoogleTasks;
         gt.authenticate();
-        if (mockTest) {
-            fakeserver.respond();
-        }
-    
+
         waitsFor(function() {
             return gt.isAuthenticated();
         }, "Authentication timed out", 10000);
@@ -202,9 +255,6 @@ describe("GoogleTasksAPI", function() {
                 taskRetreived = true;
             });
             gt.insertTask(newTask);
-            if (mockTest) {
-                fakeserver.respond();
-            }
         });
         waitsFor(function() {
             return taskRetreived;
@@ -212,9 +262,6 @@ describe("GoogleTasksAPI", function() {
         runs(function() {
             expect(responseTask.title).toEqual(newTask.title);
             expect(responseTask.updated).toBeDefined
-            if (mockTest) {
-                GoogleTasksSpecHelper.setupFakeSuccessfulUpdateTaskServer(fakeserver, updateTask);
-            }
             taskToUpdate = responseTask;
             taskToUpdate.notes = "get 40";
             gt.eventServer.on(gt.TASK_UPDATED, function(data) {
@@ -222,9 +269,6 @@ describe("GoogleTasksAPI", function() {
                 taskUpdated = true;
             });
             gt.updateTask(taskToUpdate);
-            if (mockTest) {
-                fakeserver.respond();
-            }
         });
         waitsFor(function() {
             return taskUpdated;
@@ -236,58 +280,122 @@ describe("GoogleTasksAPI", function() {
     });
 
     it("can delete a task item", function() {
-        GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
-        GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
-        var gt = window.GoogleTasks;
-        gt.authenticate();
-        fakeserver.respond();
-        expect(gt.isAuthenticated()).toBeTruthy();
-        
+        var taskInserted = false;
+        var responseTask;
         var newTask = {
             title: "Pork Chops",
             notes: "Get 20"
         };
-        var responseTask;
-        gt.eventServer.on(gt.TASK_INSERTED, function(data){
-            responseTask = data;
-        });
-        gt.insertTask(newTask);
-        fakeserver.respond();
-        expect(responseTask.title).toEqual(newTask.title);
-        expect(responseTask.updated).toBeDefined
-        
-        
         var spy = sinon.spy();
-        gt.eventServer.on(gt.TASK_DELETED, spy); 
-        gt.deleteTask(responseTask);
-        fakeserver.respond();
-        expect(spy).toHaveBeenCalled();
-        
+
+
+        var gt = window.GoogleTasks;
+        gt.authenticate();
+
+        waitsFor(function() {
+            return gt.isAuthenticated();
+        }, "Authentication timed out", 10000);
+
+        runs(function() {
+            gt.eventServer.on(gt.TASK_INSERTED, function(data) {
+                responseTask = data;
+                taskInserted = true;
+            });
+            gt.insertTask(newTask);
+        });
+
+        waitsFor(function() {
+            return taskInserted;
+        }, "Task Insert timed out", 10000);
+
+        runs(function() {
+            expect(responseTask.title).toEqual(newTask.title);
+            expect(responseTask.updated).toBeDefined();
+        });
+
+        runs(function() {
+            gt.eventServer.on(gt.TASK_DELETED, spy);
+            gt.deleteTask(responseTask);
+        });
+
+        waitsFor(function() {
+            return spy.called;
+        }, "Task deletion timed out", 10000);
+
     });
 
     it("can add a task item", function() {
-        GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
-        GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
-        var gt = window.GoogleTasks;
-        gt.authenticate();
-        fakeserver.respond();
-        expect(gt.isAuthenticated()).toBeTruthy();
+        var taskInserted = false;
+        var responseTask;
         var newTask = {
             title: "Pork Chops",
             notes: "Get 20"
         };
-        var responseTask;
-        gt.eventServer.on(gt.TASK_INSERTED, function(data){
-            responseTask = data;
+        var gt = window.GoogleTasks;
+        gt.authenticate();
+        waitsFor(function() {
+            return gt.isAuthenticated();
+        }, "Authentication timed out", 10000);
+
+        runs(function() {
+            gt.eventServer.on(gt.TASK_INSERTED, function(data) {
+                responseTask = data;
+                taskInserted = true;
+            });
+            gt.insertTask(newTask);
         });
-        gt.insertTask(newTask);
-        fakeserver.respond();
-        expect(responseTask.title).toEqual(newTask.title);
-        expect(responseTask.updated).toBeDefined();
+
+        waitsFor(function() {
+            return taskInserted;
+        }, "Task Insert timed out", 10000);
+
+        runs(function() {
+            expect(responseTask.title).toEqual(newTask.title);
+            expect(responseTask.updated).toBeDefined();
+        });
+    });
+
+    it("can authenticate with google when refresh key is in local storage", function() {
+        var spy = sinon.spy();
+        var gt = window.GoogleTasks;
+        gt.eventServer.on(gt.ACCESS_TOKEN_REFRESHED_EVENT, spy);
+        gt.authenticate();
+        waitsFor(function() {
+            return gt.isAuthenticated();
+        }, "Authentication timed out", 10000);
+        runs(function() {
+            expect(spy).toHaveBeenCalled();
+            expect(gt.isAuthenticated()).toBeTruthy();
+        });
+    });
+
+    it("can can retreive a task list from Google", function() {
+        var taskListRetreived = false;
+        var gt = window.GoogleTasks;
+        var taskList;
+        gt.authenticate();
+        waitsFor(function() {
+            return gt.isAuthenticated();
+        }, "Authentication timed out", 10000);
+
+        runs(function() {
+            gt.eventServer.on(gt.TASK_LIST_RETREIVED, function(tl) {
+                taskList = tl;
+                taskListRetreived = true;
+            });
+            gt.retreiveTaskList();
+        });
+        waitsFor(function() {
+            return taskListRetreived;
+        }, "Authentication timed out", 10000);
+        runs(function() {
+            expect(taskList).toBeDefined();
+        });
     });
 
 
-});
+ });
+
 
 var testTask = '\
 {\
