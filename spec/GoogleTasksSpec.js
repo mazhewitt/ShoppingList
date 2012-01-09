@@ -108,19 +108,37 @@ describe("GoogleTasksAPI", function() {
     });
 
     it("can can retreive a task list from Google", function() {
-        GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
-        GoogleTasksSpecHelper.setupFakeSuccessfulTaskListServer(fakeserver, tl);
+        var taskListRetreived = false;
+        if (mockTest) {
+            GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+            GoogleTasksSpecHelper.setupFakeSuccessfulTaskListServer(fakeserver, tl);
+        }
         var gt = window.GoogleTasks;
         var taskList;
         gt.authenticate();
-        fakeserver.respond();
-        expect(gt.isAuthenticated()).toBeTruthy();
-        gt.eventServer.on(gt.TASK_LIST_RETREIVED, function(tl) {
-            taskList = tl;
+        if (mockTest) {
+            fakeserver.respond();
+        }
+        waitsFor(function() {
+            return gt.isAuthenticated();
+        }, "Authentication timed out", 10000);
+    
+        runs(function() {
+            gt.eventServer.on(gt.TASK_LIST_RETREIVED, function(tl) {
+                taskList = tl;
+                taskListRetreived = true;
+            });
+            gt.retreiveTaskList();
+            if (mockTest) {
+                fakeserver.respond();
+            }
         });
-        gt.retreiveTaskList();
-        fakeserver.respond();
-        expect(taskList).toBeDefined();
+        waitsFor(function() {
+            return taskListRetreived;
+        }, "Authentication timed out", 10000);
+        runs(function() {
+            expect(taskList).toBeDefined();
+        });
     });
 
 
@@ -156,37 +174,65 @@ describe("GoogleTasksAPI", function() {
     });
 
     it("can update a single item in the google task list", function() {
-        GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
-        GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
-        var gt = window.GoogleTasks;
-        gt.authenticate();
-        fakeserver.respond();
-        expect(gt.isAuthenticated()).toBeTruthy();
-        
+        var taskRetreived = false;
+        var taskUpdated = false;
         var newTask = {
             title: "Pork Chops",
             notes: "Get 20"
         };
         var responseTask;
-        gt.eventServer.on(gt.TASK_INSERTED, function(data){
-            responseTask = data;
-        });
-        gt.insertTask(newTask);
-        fakeserver.respond();
-        expect(responseTask.title).toEqual(newTask.title);
-        expect(responseTask.updated).toBeDefined
+        var taskToUpdate;
         
-        GoogleTasksSpecHelper.setupFakeSuccessfulUpdateTaskServer(fakeserver, updateTask);
-        var taskToUpdate = responseTask;
-        taskToUpdate.notes = "get 40";
-        gt.eventServer.on(gt.TASK_UPDATED, function(data){
-            responseTask = data;
+        if (mockTest) {
+            GoogleTasksSpecHelper.setupFakeSuccessfulAuthServer(fakeserver);
+            GoogleTasksSpecHelper.setupFakeSuccessfulTaskServer(fakeserver, testTask);
+        }
+        var gt = window.GoogleTasks;
+        gt.authenticate();
+        if (mockTest) {
+            fakeserver.respond();
+        }
+    
+        waitsFor(function() {
+            return gt.isAuthenticated();
+        }, "Authentication timed out", 10000);
+        runs(function() {
+            gt.eventServer.on(gt.TASK_INSERTED, function(data) {
+                responseTask = data;
+                taskRetreived = true;
+            });
+            gt.insertTask(newTask);
+            if (mockTest) {
+                fakeserver.respond();
+            }
         });
-        gt.updateTask(taskToUpdate);
-  
-        fakeserver.respond();
-        expect(responseTask.title).toEqual(taskToUpdate.title);
-        expect(responseTask.notes).toEqual("get 40");
+        waitsFor(function() {
+            return taskRetreived;
+        }, "Task Retreival timed out", 10000);
+        runs(function() {
+            expect(responseTask.title).toEqual(newTask.title);
+            expect(responseTask.updated).toBeDefined
+            if (mockTest) {
+                GoogleTasksSpecHelper.setupFakeSuccessfulUpdateTaskServer(fakeserver, updateTask);
+            }
+            taskToUpdate = responseTask;
+            taskToUpdate.notes = "get 40";
+            gt.eventServer.on(gt.TASK_UPDATED, function(data) {
+                responseTask = data;
+                taskUpdated = true;
+            });
+            gt.updateTask(taskToUpdate);
+            if (mockTest) {
+                fakeserver.respond();
+            }
+        });
+        waitsFor(function() {
+            return taskUpdated;
+        }, "Task Update timed out", 10000);
+        runs(function() {
+            expect(responseTask.title).toEqual(taskToUpdate.title);
+            expect(responseTask.notes).toEqual("get 40");
+        });
     });
 
     it("can delete a task item", function() {
