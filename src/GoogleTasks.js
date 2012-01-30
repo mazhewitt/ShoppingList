@@ -10,11 +10,11 @@ Redirect URIs:	urn:ietf:wg:oauth:2.0:oob
  */
 
 window.GoogleTasks = function (){
-	var clientId = "256653011780.apps.googleusercontent.com";
-    var clientSecret = "R14-a9fiYWMx6PwXvxec_hlN";
+	var clientId = "256653011780-48r7f2vksc3a1kr7s66sig0i5brph5je.apps.googleusercontent.com";
+    var clientSecret = "sP3tcGFQP2r5tqwW7K_eIaj1";
 
     // Or your redirect URL for web based applications.
-    var redirectUrl = "urn:ietf:wg:oauth:2.0:oob";
+    var redirectUrl "http://c9.io/mazhewitt/shoppinglist/workspace/test.html";
     var scope = "https://www.googleapis.com/auth/tasks";
 	var access_token = "";
 	var refresh_token = "";
@@ -29,6 +29,9 @@ window.GoogleTasks = function (){
     var TASK_UPDATED  = "GoogleTasks.TASK_UPDATED";
     var TASK_DELETED  = "GoogleTasks.TASK_DELETED";
 	var kind= "tasks#task";
+    
+    
+     $.support.cors = true;
 	
 	var setTokens_fromAJAX = function(data, textStatus, jqXHR){
 		if (jqXHR.status == 200){
